@@ -17,8 +17,8 @@ public class RenderStream implements StreamTask {
 		if(msg == null){
 			return;
 		}
-		if(msg.indexOf("reallog_mark_ad:3") > -1){
-			collector.send(new OutgoingMessageEnvelope(OUTPUT_STREAM, msg));
+		if(msg.indexOf("reallog_mark_ad:4") > -1){
+			collector.send(new OutgoingMessageEnvelope(OUTPUT_STREAM, "reallog_mark_ad"));
 		}
 	}
 }
