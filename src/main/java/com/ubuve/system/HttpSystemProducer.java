@@ -1,4 +1,4 @@
-package com.ubuve.ststem;
+package com.ubuve.system;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,6 +16,14 @@ import org.apache.http.util.EntityUtils;
 import org.apache.samza.system.OutgoingMessageEnvelope;
 import org.apache.samza.system.SystemProducer;
 
+import com.ubuve.render.HttpHandle;
+/**
+ * this is a syn http client
+ * we use http keepalive connection
+ * if you want asyn http clinet, please connect the auther below
+ * @author yangyang21
+ *
+ */
 public class HttpSystemProducer implements SystemProducer{
 	private boolean get;
 	private String uri;
@@ -23,7 +31,17 @@ public class HttpSystemProducer implements SystemProducer{
 	private CloseableHttpClient httpclient; 
 	private HttpPost httppost;
 	private HttpGet httpget;	
+	private HttpSystemProducerHandle httpSystemProducerHandle;
 	
+	public HttpSystemProducerHandle getHttpSystemProducerHandle() {
+		return httpSystemProducerHandle;
+	}
+
+	public void setHttpSystemProducerHandle(
+			HttpSystemProducerHandle httpSystemProducerHandle) {
+		this.httpSystemProducerHandle = httpSystemProducerHandle;
+	}
+
 	public HttpSystemProducer(String uri, String args, boolean get) {
 		this.get = get;
 		this.args = args;
@@ -53,11 +71,10 @@ public class HttpSystemProducer implements SystemProducer{
 	public void send(String source, OutgoingMessageEnvelope envelope) {
 		CloseableHttpResponse response = null;
 		if(this.get){
-			String tmpUri = this.uri + args + '=' + envelope.getMessage();
+			String tmpUri = httpSystemProducerHandle.handleGetUrl(this.uri, args, envelope.getMessage());
 			if(this.httpget == null){
-				this.httpget = new HttpGet(tmpUri);
+				this.httpget = new HttpGet();
 			}
-			
 			this.httpget.setURI(URI.create(tmpUri));
 			try {
 				response = httpclient.execute(this.httpget);
@@ -68,12 +85,11 @@ public class HttpSystemProducer implements SystemProducer{
 			if(this.httppost == null){
 				httppost = new HttpPost();
 			}
-			
-			httppost.setURI(URI.create(this.uri));
-			args = args + '=' + envelope.getMessage();
+			String tmpUri = httpSystemProducerHandle.handlePostUrl(this.uri, args, envelope.getMessage());
+			httppost.setURI(URI.create(tmpUri));
+			String body = httpSystemProducerHandle.handlePostBody(args, envelope.getMessage());
 			InputStreamEntity reqEntity = new InputStreamEntity(
-                    new ByteArrayInputStream(args.getBytes()), -1, null);
-			
+                    new ByteArrayInputStream(body.getBytes()), -1, null);
 			this.httppost.setEntity(reqEntity);
 			try {
 				response = httpclient.execute(this.httppost);
@@ -86,7 +102,7 @@ public class HttpSystemProducer implements SystemProducer{
             try {
             	HttpEntity entity = response.getEntity();
             	EntityUtils.consume(entity);
-            	System.out.println(response.getStatusLine());
+            	httpSystemProducerHandle.handlePostResponse(envelope.getMessage(), response);
 				response.close();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -101,14 +117,15 @@ public class HttpSystemProducer implements SystemProducer{
 	}
 
 	public void flush(String source) {
-		// TODO Auto-generated method stub
+
 	}
 	
 	public static void main(String[] args) throws InterruptedException {
-		HttpSystemProducer hs = new HttpSystemProducer("http://221.179.193.178:33339", "?object", false);
+		HttpSystemProducer hs = new HttpSystemProducer("http://221.179.193.178:33339", "object", false);
+		hs.setHttpSystemProducerHandle(new HttpHandle("http://221.179.193.178:33339"));
 		while (true) {
 			hs.send("test", new OutgoingMessageEnvelope(null, "yangyang21"));
-			Thread.sleep(100L);
+			Thread.sleep(1000L);
 		}
 	}
 }

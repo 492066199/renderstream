@@ -21,7 +21,7 @@ public class RenderStream implements StreamTask {
 			return;
 		}
 		
-		if(msg.indexOf("reallog_mark_ad:4") > -1){
+		if(msg.indexOf("reallog_mark_ad:3") > -1){
 			collector.send(new OutgoingMessageEnvelope(OUTPUT_STREAM, "reallog_mark_ad"));
 		}
 	}
