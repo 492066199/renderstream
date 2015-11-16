@@ -7,9 +7,12 @@ import org.apache.samza.task.MessageCollector;
 import org.apache.samza.task.StreamTask;
 import org.apache.samza.task.TaskCoordinator;
 
+import com.ubuve.system.AsynSender;
+import com.ubuve.system.MemcachAsynProducer;
+
 public class RenderAsynStream implements StreamTask{
 	public final ConcurrentLinkedQueue<String> errorQueue = new ConcurrentLinkedQueue<String>();
-//	private AsynSender sender = new AsynSender();
+	private AsynSender sender = new MemcachAsynProducer("");
 	
 	@Override
 	public void process(IncomingMessageEnvelope envelope,
@@ -23,7 +26,7 @@ public class RenderAsynStream implements StreamTask{
 		}
 		
 		if(msg.indexOf("reallog_mark_ad:3") > -1){
-//			sender.send(msg);
+			sender.send(msg);
 		}
 	}
 	

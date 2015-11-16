@@ -17,28 +17,28 @@ import org.apache.samza.system.OutgoingMessageEnvelope;
 import org.apache.samza.system.SystemProducer;
 
 import com.ubuve.render.HttpHandle;
+
 /**
- * this is a syn http client
- * we use http keepalive connection
- * if you want asyn http clinet, please connect the auther below
+ * this is a syn http client we use http keepalive connection if you want asyn
+ * http clinet, please connect the auther below
+ * 
  * @author yangyang21
  *
  */
-public class HttpSystemProducer implements SystemProducer{
+public class HttpSystemProducer implements SystemProducer {
 	private boolean get;
 	private String uri;
 	private String args;
-	private CloseableHttpClient httpclient; 
+	private CloseableHttpClient httpclient;
 	private HttpPost httppost;
-	private HttpGet httpget;	
+	private HttpGet httpget;
 	private HttpSystemProducerHandle httpSystemProducerHandle;
-	
+
 	public HttpSystemProducerHandle getHttpSystemProducerHandle() {
 		return httpSystemProducerHandle;
 	}
 
-	public void setHttpSystemProducerHandle(
-			HttpSystemProducerHandle httpSystemProducerHandle) {
+	public void setHttpSystemProducerHandle(HttpSystemProducerHandle httpSystemProducerHandle) {
 		this.httpSystemProducerHandle = httpSystemProducerHandle;
 	}
 
@@ -46,72 +46,59 @@ public class HttpSystemProducer implements SystemProducer{
 		this.get = get;
 		this.args = args;
 		this.uri = uri;
-        RequestConfig defaultRequestConfig = RequestConfig.custom()
-            .setSocketTimeout(1000)
-            .setConnectTimeout(1000)
-            .setConnectionRequestTimeout(1000)
-            .build();   
-        this.httpclient = HttpClients.custom()
-            .setDefaultRequestConfig(defaultRequestConfig)
-            .build();
+		RequestConfig defaultRequestConfig = RequestConfig.custom().setSocketTimeout(1000).setConnectTimeout(1000)
+				.setConnectionRequestTimeout(1000).build();
+		this.httpclient = HttpClients.custom().setDefaultRequestConfig(defaultRequestConfig).build();
 	}
 
 	public void start() {
-		
+
 	}
 
 	public void stop() {
-	
+
 	}
 
 	public void register(String source) {
-		
+
 	}
 
 	public void send(String source, OutgoingMessageEnvelope envelope) {
 		CloseableHttpResponse response = null;
-		if(this.get){
-			String tmpUri = httpSystemProducerHandle.handleGetUrl(this.uri, args, envelope.getMessage());
-			if(this.httpget == null){
-				this.httpget = new HttpGet();
-			}
-			this.httpget.setURI(URI.create(tmpUri));
-			try {
+		try {
+			if (this.get) {
+				String tmpUri = httpSystemProducerHandle.handleGetUrl(this.uri, args, envelope.getMessage());
+				if (this.httpget == null) {
+					this.httpget = new HttpGet();
+				}
+				this.httpget.setURI(URI.create(tmpUri));
 				response = httpclient.execute(this.httpget);
-			} catch (Exception e1) {
-				e1.printStackTrace();
-			}
-		}else {
-			if(this.httppost == null){
-				httppost = new HttpPost();
-			}
-			String tmpUri = httpSystemProducerHandle.handlePostUrl(this.uri, args, envelope.getMessage());
-			httppost.setURI(URI.create(tmpUri));
-			String body = httpSystemProducerHandle.handlePostBody(args, envelope.getMessage());
-			InputStreamEntity reqEntity = new InputStreamEntity(
-                    new ByteArrayInputStream(body.getBytes()), -1, null);
-			this.httppost.setEntity(reqEntity);
-			try {
+			} else {
+				if (this.httppost == null) {
+					httppost = new HttpPost();
+				}
+				String tmpUri = httpSystemProducerHandle.handlePostUrl(this.uri, args, envelope.getMessage());
+				httppost.setURI(URI.create(tmpUri));
+				String body = httpSystemProducerHandle.handlePostBody(args, envelope.getMessage());
+				InputStreamEntity reqEntity = new InputStreamEntity(new ByteArrayInputStream(body.getBytes()), -1,
+						null);
+				this.httppost.setEntity(reqEntity);
 				response = httpclient.execute(this.httppost);
-			} catch (Exception e) {
-				e.printStackTrace();
 			}
-		}
-		
-		if(response != null){
-            try {
-            	HttpEntity entity = response.getEntity();
-            	EntityUtils.consume(entity);
-            	httpSystemProducerHandle.handlePostResponse(envelope.getMessage(), response);
+			if (response != null) {
+				HttpEntity entity = response.getEntity();
+				EntityUtils.consume(entity);
+				httpSystemProducerHandle.handlePostResponse(envelope.getMessage(), response);
 				response.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}    
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		
-		if(get && this.httpget != null){
+
+		if (get && this.httpget != null) {
 			this.httpget.reset();
-		}else if(this.httppost != null){	
+		} else if (this.httppost != null) {
 			this.httppost.reset();
 		}
 	}
@@ -119,7 +106,7 @@ public class HttpSystemProducer implements SystemProducer{
 	public void flush(String source) {
 
 	}
-	
+
 	public static void main(String[] args) throws InterruptedException {
 		HttpSystemProducer hs = new HttpSystemProducer("http://221.179.193.178:33339", "object", false);
 		hs.setHttpSystemProducerHandle(new HttpHandle("http://221.179.193.178:33339"));
