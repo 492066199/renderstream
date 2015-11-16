@@ -3,20 +3,21 @@ package com.ubuve.system;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import net.spy.memcached.MemcachedClient;
-
-import org.apache.samza.system.OutgoingMessageEnvelope;
-import org.apache.samza.system.SystemProducer;
+import net.spy.memcached.internal.OperationFuture;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
-public class MemcacheSystemProducer implements SystemProducer{
+public class MemcachAsynProducer implements AsynSender{
 	private MemcachedClient mClient;
 	private String hosts;
+	private final ConcurrentLinkedQueue<String> errorQueue = new ConcurrentLinkedQueue<String>();
+	private final ConcurrentLinkedQueue<OperationFuture<Boolean>> FutureQueue = new ConcurrentLinkedQueue<OperationFuture<Boolean>>();
 	
-	public MemcacheSystemProducer(String hosts) {
+	public MemcachAsynProducer(String hosts) {
 		this.hosts = hosts;
 		this.mClient = getClients();
 	}
@@ -43,33 +44,12 @@ public class MemcacheSystemProducer implements SystemProducer{
 	}
 
 
-
 	@Override
-	public void start() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stop() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void register(String source) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void send(String source, OutgoingMessageEnvelope envelope) {
-		mClient.set("", 0, envelope.getMessage());
-	}
-
-	@Override
-	public void flush(String source) {
-		// TODO Auto-generated method stub
-		
+	public void send(String msg) {
+		if(mClient == null){
+			mClient = getClients();
+		}
+		OperationFuture<Boolean> k = mClient.set("key", 0, "value");
+		FutureQueue.add(k);
 	}
 }

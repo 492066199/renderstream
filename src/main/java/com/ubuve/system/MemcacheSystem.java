@@ -27,7 +27,6 @@ public class MemcacheSystem implements SystemFactory{
 	public SystemProducer getProducer(String systemName, Config config,
 			MetricsRegistry registry) {
 		String host = config.get("systems." + systemName + ".hosts");
-		
 		MemcacheSystemProducer producer = new MemcacheSystemProducer(host);
 		return producer;
 	}
