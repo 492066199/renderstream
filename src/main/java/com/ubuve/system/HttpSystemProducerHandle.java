@@ -1,10 +1,10 @@
 package com.ubuve.system;
 
-import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.HttpResponse;
 
 public interface HttpSystemProducerHandle {
 
-	void handlePostResponse(Object message, CloseableHttpResponse response);
+	boolean handleResponse(HttpResponse response);
 
 	String handlePostUrl(String uri, String args, Object message);
 

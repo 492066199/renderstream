@@ -22,7 +22,7 @@ public class RenderStream implements StreamTask {
 			return;
 		}
 		
-		if(msg.indexOf("reallog_mark_ad:3") > -1){
+		if(msg.indexOf("reallog_mark_ad:4") > -1){
 			int k = RandomUtils.nextInt(10);
 			if(k > 7 ){
 				int count = errorQueue.size();

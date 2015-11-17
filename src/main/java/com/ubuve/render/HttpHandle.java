@@ -1,6 +1,12 @@
 package com.ubuve.render;
 
-import org.apache.http.client.methods.CloseableHttpResponse;
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.util.EntityUtils;
 
 import com.ubuve.system.HttpSystemProducerHandle;
 	
@@ -20,10 +26,25 @@ public class HttpHandle implements HttpSystemProducerHandle{
 		}
 	}
 
-	public void handlePostResponse(Object message,
-			CloseableHttpResponse response) {
-		System.out.println(response.getStatusLine());
-		
+	public boolean handleResponse(HttpResponse response) {
+		boolean flag = false;
+		if(response != null){
+			HttpEntity entity = response.getEntity();
+			try {
+				EntityUtils.consume(entity);
+				StatusLine rt = response.getStatusLine();
+				if(rt.getStatusCode() == 200){
+					flag = true;				
+				}
+				System.out.println(rt.toString());
+				if(response instanceof Cloneable){
+					((Closeable) response).close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return flag;
 	}
 
 	public String handlePostUrl(String uri, String args, Object message) {		
