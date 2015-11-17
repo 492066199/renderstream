@@ -17,6 +17,10 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
+import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
+import org.apache.http.nio.reactor.ConnectingIOReactor;
+import org.apache.http.nio.reactor.IOReactorException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -44,16 +48,25 @@ public class HttpAsynProducer implements AsynSender{
 		this.get = get;
 		this.args = args;
 		this.uri = uri;
+		ConnectingIOReactor ioReactor = null;
+		try {
+			ioReactor = new DefaultConnectingIOReactor();
+		} catch (IOReactorException e) {
+			e.printStackTrace();
+		}
+		assert(ioReactor != null);
+	    PoolingNHttpClientConnectionManager cm = new PoolingNHttpClientConnectionManager(ioReactor);
+	    cm.setMaxTotal(100);
+	    cm.setDefaultMaxPerRoute(100);    
 		RequestConfig defaultRequestConfig = RequestConfig.custom()
 				.setSocketTimeout(1000)
 				.setConnectTimeout(1000)
 				.setConnectionRequestTimeout(1000).build();
-		System.setProperty("http.keepAlive", "true");
-        System.setProperty("http.maxConnections", "20");
 		this.httpclient = HttpAsyncClients.custom()
-				.useSystemProperties()
 				.setDefaultRequestConfig(defaultRequestConfig)
+				.setConnectionManager(cm)
 				.build();
+		//CloseableHttpAsyncClient 
 		httpclient.start();
 	}
 
@@ -67,7 +80,7 @@ public class HttpAsynProducer implements AsynSender{
 				this.httpget.reset();
 			}
 			this.httpget.setURI(URI.create(tmpUri));
-			response = httpclient.execute(this.httpget, null);
+			response = this.httpclient.execute(this.httpget, null);
 		} else {
 			if (this.httppost == null) {
 				httppost = new HttpPost();
@@ -80,7 +93,7 @@ public class HttpAsynProducer implements AsynSender{
 			InputStreamEntity reqEntity = new InputStreamEntity(new ByteArrayInputStream(body.getBytes()), -1,
 					null);
 			this.httppost.setEntity(reqEntity);
-			response = httpclient.execute(this.httppost, null);
+			response = this.httpclient.execute(this.httppost, null);
 		}
 		return response;
 	}
@@ -88,12 +101,11 @@ public class HttpAsynProducer implements AsynSender{
 	
 	@Override
 	public void send(String msg) {
-		if(msgs.size() < 15){
-			msgs.add(msg);
-		}else{
+		msgs.add(msg);
+		if(msgs.size() >= 15){
 			Map<Integer, Future<HttpResponse>> futures = Maps.newHashMap(); 
 			ImmutableList<String> cloneList  = ImmutableList.copyOf(msgs);
-			for(int i = 0; i < 15; i++){
+			for(int i = 0; i < msgs.size(); i++){
 				Future<HttpResponse> future= asynSendTo(cloneList.get(i));
 				futures.put(i, future);
 			}
